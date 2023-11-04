@@ -1,0 +1,15 @@
+github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
+github.com/go-pay/bm v0.0.0-20231104140628-922a8107c7dd h1:FxRmde5/CEIh5hy6zHfhqzKJGyhbI9JoNf6h/LlbiVM=
+github.com/go-pay/bm v0.0.0-20231104140628-922a8107c7dd/go.mod h1:puiU1FnDsC1m2h8ArJc4n1WZuzAMZEYex0Gp10PY3fI=
+github.com/go-pay/xhttp v0.0.0-20231104140917-2ecd744acdc7 h1:ZjHdEbdaZVQLtTQkdlpZOH08qKtF6tVIlLHdzz0jp2I=
+github.com/go-pay/xhttp v0.0.0-20231104140917-2ecd744acdc7/go.mod h1:pJitfkAFttFh/tEorDBZ+JI5WRx8G1Od/JVkQAod7UY=
+github.com/go-pay/xlog v0.0.0-20231104134525-b6ce65b7e035 h1:jlc9l6rgHlUSYP/hN8JzH8mTGn2YzQD7KJ1tCW+PwR8=
+github.com/go-pay/xlog v0.0.0-20231104134525-b6ce65b7e035/go.mod h1:9PX534KUJqcKyxfEgNDms41EiwSm+IR0NxY01k31YHs=
+github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
+go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
+go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
+go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
+go.uber.org/zap v1.26.0 h1:sI7k6L95XOKS281NhVKOFCUNIvv9e0w4BF8N3u+tCRo=
+go.uber.org/zap v1.26.0/go.mod h1:dtElttAiwGvoJ/vj4IwHBS/gXsEu/pZ50mUIRWuG0so=
+gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
