@@ -40,7 +40,7 @@ const (
 	directory64LocSignature  = 0x07064b50
 	directory64EndSignature  = 0x06064b50
 	dataDescriptorSignature  = 0x08074b50 // de-facto standard; required by OS X Finder
-	fileHeaderLen            = 30         // + filename + extra
+	FileHeaderLen            = 30         // + filename + extra
 	directoryHeaderLen       = 46         // + filename + extra + comment
 	directoryEndLen          = 22         // + comment
 	dataDescriptorLen        = 16         // four uint32: descriptor signature, crc32, compressed size, size
@@ -158,6 +158,9 @@ type FileHeader struct {
 
 	Extra         []byte
 	ExternalAttrs uint32 // Meaning depends on CreatorVersion
+
+	DiskNumStart  uint16
+	InternalAttrs uint16
 }
 
 // FileInfo returns an fs.FileInfo for the FileHeader.

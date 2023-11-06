@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
+	"github.com/go-pay/xlog"
 	"hash"
 	"hash/crc32"
 	"io"
@@ -341,7 +342,7 @@ func (r *checksumReader) Close() error { return r.rc.Close() }
 // findBodyOffset does the minimum work to verify the file has a header
 // and returns the file body offset.
 func (f *File) findBodyOffset() (int64, error) {
-	var buf [fileHeaderLen]byte
+	var buf [FileHeaderLen]byte
 	if _, err := f.zipr.ReadAt(buf[:], f.headerOfHfset); err != nil {
 		return 0, err
 	}
@@ -352,7 +353,7 @@ func (f *File) findBodyOffset() (int64, error) {
 	b = b[22:] // skip over most of the header
 	filenameLen := int(b.uint16())
 	extraLen := int(b.uint16())
-	return int64(fileHeaderLen + filenameLen + extraLen), nil
+	return int64(FileHeaderLen + filenameLen + extraLen), nil
 }
 
 // readDirectoryHeader attempts to read a directory header from r.
@@ -364,33 +365,37 @@ func readDirectoryHeader(f *File, r io.Reader) error {
 		return err
 	}
 	b := readBuf(buf[:])
-	if sig := b.uint32(); sig != directoryHeaderSignature {
+	// magic, ver, ver_needed, flags, method, date_time, crc, complen, uncomplen, fnlen, extralen, commentlen, disknum_start, internal_attr, external_attr, local_header_ofs = \
+	// {"I",   "H",   "H", 	    "H",    "H",     "I",     "I",   "I",      "I",     "H",   "H",        "H",         "H",           "H",          "I",            "I"}
+	if sig := b.uint32(); sig != directoryHeaderSignature { // I 标识符 (0x04034b50(大端))
 		return ErrFormat
 	}
-	f.CreatorVersion = b.uint16()
-	f.ReaderVersion = b.uint16()
-	f.Flags = b.uint16()
-	f.Method = b.uint16()
-	f.ModifiedTime = b.uint16()
-	f.ModifiedDate = b.uint16()
-	f.CRC32 = b.uint32()
-	f.CompressedSize = b.uint32()
-	f.UncompressedSize = b.uint32()
+	f.CreatorVersion = b.uint16()       // H 版本
+	f.ReaderVersion = b.uint16()        // H 提取所需的版本
+	f.Flags = b.uint16()                // H 通用位标志
+	f.Method = b.uint16()               // H 压缩方法
+	f.ModifiedTime = b.uint16()         // H 最后修改文件时间 时分秒	double H = one I
+	f.ModifiedDate = b.uint16()         // H 最后修改文件日期 年月日	double H = one I
+	f.CRC32 = b.uint32()                // I crc-32(对压缩前的文件计算)
+	f.CompressedSize = b.uint32()       // I 压缩大小
+	f.UncompressedSize = b.uint32()     // I 压缩前大小
+	filenameLen := int(b.uint16())      // H 文件名长度
+	extraLen := int(b.uint16())         // H 额外字段长度
+	commentLen := int(b.uint16())       // H 文件注释长度
+	f.DiskNumStart = b.uint16()         // H 磁盘号
+	f.InternalAttrs = b.uint16()        // H 内部文件属性
+	f.ExternalAttrs = b.uint32()        // I 外部文件属性
+	f.headerOfHfset = int64(b.uint32()) // I 本地头的相对偏移量 (对应的本地文件相对于文件开始的偏移量)
+	f.HeaderOffset = f.headerOfHfset
 	f.CompressedSize64 = uint64(f.CompressedSize)
 	f.UncompressedSize64 = uint64(f.UncompressedSize)
-	filenameLen := int(b.uint16())
-	extraLen := int(b.uint16())
-	commentLen := int(b.uint16())
-	b = b[4:] // skipped start disk number and internal attributes (2x uint16)
-	f.ExternalAttrs = b.uint32()
-	f.headerOfHfset = int64(b.uint32())
-	f.HeaderOffset = f.headerOfHfset
 	d := make([]byte, filenameLen+extraLen+commentLen)
 	if _, err := io.ReadFull(r, d); err != nil {
 		return err
 	}
 	f.Name = string(d[:filenameLen])
 	f.Extra = d[filenameLen : filenameLen+extraLen]
+	xlog.Warnf("f.Name[%s],filenameLen: %d, extraLen: %d", f.Name, filenameLen, len(f.Extra))
 	f.Comment = string(d[filenameLen+extraLen:])
 
 	// Determine the character encoding.

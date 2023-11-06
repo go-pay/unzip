@@ -392,7 +392,7 @@ func writeHeader(w io.Writer, h *header) error {
 		return errLongExtra
 	}
 
-	var buf [fileHeaderLen]byte
+	var buf [FileHeaderLen]byte
 	b := writeBuf(buf[:])
 	b.uint32(uint32(fileHeaderSignature))
 	b.uint16(h.ReaderVersion)
