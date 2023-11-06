@@ -7,12 +7,13 @@ import (
 )
 
 type ExtractFile struct {
-	FileName       string
-	Method         uint16
-	CompressedSize int64
-	HeaderOffset   int64
-	RangeStart     int64
-	RangeEnd       int64
+	FileName         string
+	Method           uint16
+	CompressedSize   int64
+	UncompressedSize int64
+	HeaderOffset     int64
+	RangeStart       int64
+	RangeEnd         int64
 }
 
 func findFiles(c context.Context, zipUrl string, bs []byte, files []string, getSize int64) (efs []*ExtractFile, err error) {
@@ -29,10 +30,11 @@ func findFiles(c context.Context, zipUrl string, bs []byte, files []string, getS
 		// 收集文件
 		if _, ok := fileNameMap[file.Name]; ok {
 			item := &ExtractFile{
-				FileName:       file.Name,
-				Method:         file.Method,
-				CompressedSize: int64(file.CompressedSize64),
-				HeaderOffset:   file.HeaderOffset,
+				FileName:         file.Name,
+				Method:           file.Method,
+				CompressedSize:   int64(file.CompressedSize64),
+				UncompressedSize: int64(file.UncompressedSize64),
+				HeaderOffset:     file.HeaderOffset,
 			}
 			// 获取下载RangeStart
 			lfh, _ := getLocalFileHead(c, zipUrl, item.FileName, item.HeaderOffset)
@@ -40,25 +42,6 @@ func findFiles(c context.Context, zipUrl string, bs []byte, files []string, getS
 			item.RangeEnd = item.RangeStart + item.CompressedSize - 1
 			efs = append(efs, item)
 		}
-		//if file.Name == "system.transfer.list123" {
-		//	//xlog.Infof("fileName: %s, size: %d", file.Name, file.CompressedSize64)
-		//	open, err := file.Open()
-		//	if err != nil {
-		//		xlog.Errorf("file.Open err:%+v", err)
-		//		//if strings.Contains(err.Error(), "negative offset") {
-		//		//	getRange(url, fileSize, fileSize-getSize-65536, getSize)
-		//		//}
-		//		return
-		//	}
-		//	xlog.Infof("open: %v", open)
-		//
-		//	bs, err := io.ReadAll(open)
-		//	if err != nil {
-		//		xlog.Error(err)
-		//		return
-		//	}
-		//	xlog.Infof("find over :\n%s", string(bs))
-		//}
 	}
 	return efs, nil
 }
