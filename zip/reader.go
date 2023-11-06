@@ -347,7 +347,7 @@ func (f *File) findBodyOffset() (int64, error) {
 		return 0, err
 	}
 	b := readBuf(buf[:])
-	if sig := b.uint32(); sig != fileHeaderSignature {
+	if sig := b.uint32(); sig != FileHeaderSignature {
 		return 0, ErrFormat
 	}
 	b = b[22:] // skip over most of the header
@@ -395,7 +395,7 @@ func readDirectoryHeader(f *File, r io.Reader) error {
 	}
 	f.Name = string(d[:filenameLen])
 	f.Extra = d[filenameLen : filenameLen+extraLen]
-	xlog.Warnf("f.Name[%s],filenameLen: %d, extraLen: %d", f.Name, filenameLen, len(f.Extra))
+	//xlog.Warnf("f.Name[%s],filenameLen: %d, extraLen: %d", f.Name, filenameLen, len(f.Extra))
 	f.Comment = string(d[filenameLen+extraLen:])
 
 	// Determine the character encoding.
@@ -593,6 +593,7 @@ func readDirectoryEnd(r io.ReaderAt, size int64) (dir *directoryEnd, baseOffset 
 			break
 		}
 		if i == 1 || bLen == size {
+			xlog.Warnf("zip: not a valid zip file (no central directory found)")
 			return nil, 0, ErrFormat
 		}
 	}

@@ -14,7 +14,7 @@ type Protocol struct {
 }
 
 // 封包
-func (p *Protocol) Pack(args ...interface{}) []byte {
+func (p *Protocol) Pack(args ...any) []byte {
 	la := len(args)
 	ls := len(p.Format)
 	ret := []byte{}
@@ -34,7 +34,7 @@ func (p *Protocol) Pack(args ...interface{}) []byte {
 }
 
 // 解包
-func (p *Protocol) UnPack(msg []byte) []interface{} {
+func (p *Protocol) UnPack(msg []byte) []any {
 	la := len(p.Format)
 	ret := make([]interface{}, la)
 	if la > 0 {

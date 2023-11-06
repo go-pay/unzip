@@ -394,7 +394,7 @@ func writeHeader(w io.Writer, h *header) error {
 
 	var buf [FileHeaderLen]byte
 	b := writeBuf(buf[:])
-	b.uint32(uint32(fileHeaderSignature))
+	b.uint32(uint32(FileHeaderSignature))
 	b.uint16(h.ReaderVersion)
 	b.uint16(h.Flags)
 	b.uint16(h.Method)

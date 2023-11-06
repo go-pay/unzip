@@ -34,7 +34,7 @@ const (
 )
 
 const (
-	fileHeaderSignature      = 0x04034b50
+	FileHeaderSignature      = 0x04034b50
 	directoryHeaderSignature = 0x02014b50
 	directoryEndSignature    = 0x06054b50
 	directory64LocSignature  = 0x07064b50
