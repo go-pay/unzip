@@ -107,7 +107,7 @@ func downLoadFile(c context.Context, zipUrl string, file *ExtractFile, saveDir .
 	return fileContent, nil
 }
 
-func ReadFileStream(c context.Context, zipUrl string, file *ExtractFile) (fileContent []byte, err error) {
+func ReadFileStream(c context.Context, zipUrl string, file *ExtractFile) (fileStream []byte, err error) {
 	//xlog.Infof("ReadFile: %+v", file.FileName)
 	bs, err := httpGetRange(c, zipUrl, file.RangeStart, file.CompressedSize)
 	if err != nil {
@@ -115,11 +115,11 @@ func ReadFileStream(c context.Context, zipUrl string, file *ExtractFile) (fileCo
 	}
 	decompressor := flate.NewReader(bytes.NewBuffer(bs))
 	defer decompressor.Close()
-	fileContent, err = io.ReadAll(decompressor)
+	fileStream, err = io.ReadAll(decompressor)
 	if err != nil {
 		xlog.Errorf("io.ReadAll, err:%+v", err)
 		return nil, err
 	}
 
-	return fileContent, nil
+	return fileStream, nil
 }
