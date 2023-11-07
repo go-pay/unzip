@@ -5,6 +5,8 @@ github.com/go-pay/xhttp v0.0.0-20231104140917-2ecd744acdc7 h1:ZjHdEbdaZVQLtTQkdl
 github.com/go-pay/xhttp v0.0.0-20231104140917-2ecd744acdc7/go.mod h1:pJitfkAFttFh/tEorDBZ+JI5WRx8G1Od/JVkQAod7UY=
 github.com/go-pay/xlog v0.0.0-20231104134525-b6ce65b7e035 h1:jlc9l6rgHlUSYP/hN8JzH8mTGn2YzQD7KJ1tCW+PwR8=
 github.com/go-pay/xlog v0.0.0-20231104134525-b6ce65b7e035/go.mod h1:9PX534KUJqcKyxfEgNDms41EiwSm+IR0NxY01k31YHs=
+github.com/go-pay/xlog v0.0.0-20231104151126-6a7825e04ab0 h1:h56AANP+YV4mJTXQzo1FdioOnegv1044MU3D3IugScQ=
+github.com/go-pay/xlog v0.0.0-20231104151126-6a7825e04ab0/go.mod h1:+BVUv7nbj3HzDvh3dDywrQUKtYfAsgaxTLVFGTxShIA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=

@@ -4,7 +4,7 @@ go 1.20.0
 
 require (
 	github.com/go-pay/xhttp v0.0.0-20231104140917-2ecd744acdc7
-	github.com/go-pay/xlog v0.0.0-20231104134525-b6ce65b7e035
+	github.com/go-pay/xlog v0.0.0-20231104151126-6a7825e04ab0
 )
 
 require (
