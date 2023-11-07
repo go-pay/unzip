@@ -44,10 +44,10 @@ func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileCont
 	for _, v := range efs {
 		//xlog.Infof("v: %#v", v)
 		fileStream, err := readFile(c, zipUrl, v)
-		fileContent[v.FileName] = fileStream
 		if err != nil {
 			return nil, err
 		}
+		fileContent[v.FileName] = fileStream
 	}
 	return fileContent, nil
 }
