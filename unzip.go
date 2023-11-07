@@ -76,8 +76,8 @@ func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileCont
 	fileContent = make(map[string]interface{})
 	for _, v := range efs {
 		//xlog.Infof("v: %#v", v)
-		fileContentStream, err := ReadFileStream(c, zipUrl, v)
-		fileContent[v.FileName] = string(fileContentStream)
+		fileStream, err := ReadFileStream(c, zipUrl, v)
+		fileContent[v.FileName] = string(fileStream)
 		if err != nil {
 			return nil, err
 		}
