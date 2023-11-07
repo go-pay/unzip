@@ -2,9 +2,6 @@ package unzip
 
 import (
 	"context"
-	"strconv"
-
-	"github.com/go-pay/xlog"
 )
 
 // 解压指定文件
@@ -14,23 +11,8 @@ func DecompressFile() {
 
 // 远程解压指定文件
 func DecompressFileFromURL(c context.Context, zipUrl string, files []string, saveDir ...string) (err error) {
-	res, err := httpClient.HttpClient.Head(zipUrl)
-	if err != nil {
-		xlog.Errorf("http head err:%+v", err)
-		return
-	}
-	ar := res.Header.Get("Accept-Ranges")
-	if ar != "bytes" {
-		xlog.Warnf("http head err:%+v", "Accept-Ranges is not bytes")
-		return
-	}
-	cl, err := strconv.ParseInt(res.Header.Get("Content-Length"), 10, 64)
-	if err != nil {
-		return err
-	}
-	//xlog.Infof("Content-Length:%d", cl)
-	// 获取最后65536字节，zip文件头信息
-	bs, err := httpGetRange(c, zipUrl, cl-65536, 65536)
+	// read zip file head
+	bs, err := readZipFileHead(c, zipUrl)
 	if err != nil {
 		return err
 	}
@@ -47,24 +29,9 @@ func DecompressFileFromURL(c context.Context, zipUrl string, files []string, sav
 }
 
 // 远程读取指定文件
-func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileContent map[string]interface{}, err error) {
-	res, err := httpClient.HttpClient.Head(zipUrl)
-	if err != nil {
-		xlog.Errorf("http head err:%+v", err)
-		return
-	}
-	ar := res.Header.Get("Accept-Ranges")
-	if ar != "bytes" {
-		xlog.Warnf("http head err:%+v", "Accept-Ranges is not bytes")
-		return
-	}
-	cl, err := strconv.ParseInt(res.Header.Get("Content-Length"), 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	//xlog.Infof("Content-Length:%d", cl)
-	// 获取最后65536字节，zip文件头信息
-	bs, err := httpGetRange(c, zipUrl, cl-65536, 65536)
+func SaveFileFromURL(c context.Context, zipUrl string, files []string) (fileContent map[string][]byte, err error) {
+	// read zip file head
+	bs, err := readZipFileHead(c, zipUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +40,11 @@ func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileCont
 	if err != nil {
 		return nil, err
 	}
-	fileContent = make(map[string]interface{})
+	fileContent = make(map[string][]byte)
 	for _, v := range efs {
 		//xlog.Infof("v: %#v", v)
-		fileStream, err := ReadFileStream(c, zipUrl, v)
-		fileContent[v.FileName] = string(fileStream)
+		fileStream, err := readFile(c, zipUrl, v)
+		fileContent[v.FileName] = fileStream
 		if err != nil {
 			return nil, err
 		}

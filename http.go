@@ -107,7 +107,7 @@ func downLoadFile(c context.Context, zipUrl string, file *ExtractFile, saveDir .
 	return fileContent, nil
 }
 
-func ReadFileStream(c context.Context, zipUrl string, file *ExtractFile) (fileStream []byte, err error) {
+func readFile(c context.Context, zipUrl string, file *ExtractFile) (fileStream []byte, err error) {
 	//xlog.Infof("ReadFile: %+v", file.FileName)
 	bs, err := httpGetRange(c, zipUrl, file.RangeStart, file.CompressedSize)
 	if err != nil {
@@ -122,4 +122,28 @@ func ReadFileStream(c context.Context, zipUrl string, file *ExtractFile) (fileSt
 	}
 
 	return fileStream, nil
+}
+
+func readZipFileHead(c context.Context, zipUrl string) (bs []byte, err error) {
+	res, err := httpClient.HttpClient.Head(zipUrl)
+	if err != nil {
+		xlog.Errorf("http head err:%+v", err)
+		return
+	}
+	ar := res.Header.Get("Accept-Ranges")
+	if ar != "bytes" {
+		xlog.Warnf("http head err:%+v", "Accept-Ranges is not bytes")
+		return
+	}
+	cl, err := strconv.ParseInt(res.Header.Get("Content-Length"), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	//xlog.Infof("Content-Length:%d", cl)
+	// 获取最后65536字节，zip文件头信息
+	bs, err = httpGetRange(c, zipUrl, cl-65536, 65536)
+	if err != nil {
+		return nil, err
+	}
+	return bs, nil
 }
