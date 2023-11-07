@@ -29,7 +29,7 @@ func DecompressFileFromURL(c context.Context, zipUrl string, files []string, sav
 }
 
 // 远程读取指定文件
-func SaveFileFromURL(c context.Context, zipUrl string, files []string) (fileContent map[string][]byte, err error) {
+func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileContent map[string][]byte, err error) {
 	// read zip file head
 	bs, err := readZipFileHead(c, zipUrl)
 	if err != nil {
