@@ -43,6 +43,7 @@ func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileCont
 	fileContent = make(map[string][]byte)
 	for _, v := range efs {
 		//xlog.Infof("v: %#v", v)
+		// todo 做成结构体 map[fiename]struct{}{}
 		fileStream, err := readFile(c, zipUrl, v)
 		if err != nil {
 			return nil, err
