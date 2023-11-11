@@ -10,6 +10,7 @@ func DecompressFile() {
 }
 
 // 远程解压指定文件
+// files: 需要解压的文件(完整路径)
 func DecompressFileFromURL(c context.Context, zipUrl string, files []string, saveDir ...string) (err error) {
 	// read zip file head
 	bs, err := readZipFileHead(c, zipUrl)
@@ -29,6 +30,7 @@ func DecompressFileFromURL(c context.Context, zipUrl string, files []string, sav
 }
 
 // 远程读取指定文件
+// files: 需要解压的文件(完整路径)
 func ReadFileFromURL(c context.Context, zipUrl string, files []string) (fileContent map[string][]byte, err error) {
 	// read zip file head
 	bs, err := readZipFileHead(c, zipUrl)
