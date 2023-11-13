@@ -210,6 +210,7 @@ func (zr *ZipReader) PrintDirectory() error {
 	return nil
 }
 
+// todo:多个文件并发操作
 // 通过文件名远程读取指定文件，返回key:path value:fileContent(可能存在同名，以不同key:path区分)
 func (zr *ZipReader) FileByName(c context.Context, files []string) (fileContent map[string][]byte, err error) {
 	if zr == nil {

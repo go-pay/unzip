@@ -2,8 +2,9 @@ package unzip
 
 import (
 	"fmt"
-	"github.com/go-pay/xlog"
 	"testing"
+
+	"github.com/go-pay/xlog"
 )
 
 func TestReadFileFromURLByName(t *testing.T) {
