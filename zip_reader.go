@@ -2,9 +2,12 @@ package unzip
 
 import (
 	"bytes"
+	"compress/flate"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-pay/xlog"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
@@ -136,6 +139,22 @@ func (zr *ZipReader) printFileNode(node *FileNode, indent string, isLast bool) {
 	}
 }
 
+func (zr *ZipReader) readFile(c context.Context, file *ExtractFile) (fileStream []byte, err error) {
+	//xlog.Infof("ReadFile: %+v", file.FileName)
+	bs, err := httpGetRange(c, zr.zipUrl, file.RangeStart, file.CompressedSize)
+	if err != nil {
+		return nil, err
+	}
+	decompressor := flate.NewReader(bytes.NewBuffer(bs))
+	defer decompressor.Close()
+	fileStream, err = io.ReadAll(decompressor)
+	if err != nil {
+		xlog.Errorf("io.ReadAll, err:%+v", err)
+		return nil, err
+	}
+	return fileStream, nil
+}
+
 func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 	// Obtain the central directory section of the zip package
 	res, err := httpClient.HttpClient.Head(zipUrl)
@@ -223,7 +242,7 @@ func (zr *ZipReader) FileByName(c context.Context, files []string) (fileContent 
 	for _, f := range files {
 		retFiles := zr.findFileNode(zr.directory.children[0], f)
 		for _, rf := range retFiles {
-			fileStream, err := readFile(c, zr.zipUrl, rf.file)
+			fileStream, err := zr.readFile(c, rf.file)
 			if err != nil {
 				return nil, err
 			}
@@ -245,7 +264,7 @@ func (zr *ZipReader) FileByPath(c context.Context, filePath string) (fileContent
 	if retFiles == nil {
 		return nil, errors.New("file not found")
 	}
-	fileStream, err := readFile(c, zr.zipUrl, retFiles.file)
+	fileStream, err := zr.readFile(c, retFiles.file)
 	if err != nil {
 		return nil, err
 	}
