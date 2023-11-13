@@ -5,7 +5,6 @@ import (
 	"context"
 
 	"github.com/go-pay/unzip/zip"
-	"github.com/go-pay/xlog"
 )
 
 type ExtractFile struct {
@@ -28,7 +27,7 @@ func findFiles(c context.Context, zipUrl string, bs []byte, files []string, getS
 		fileNameMap[v] = struct{}{}
 	}
 	for _, file := range r.File {
-		xlog.Infof("fileName: %s , method: %d , size: %d , offset: %d", file.Name, file.Method, file.CompressedSize64, file.HeaderOffset) //scatter.txt
+		//xlog.Infof("fileName: %s , method: %d , size: %d , offset: %d", file.Name, file.Method, file.CompressedSize64, file.HeaderOffset) //scatter.txt
 		// 收集文件
 		if _, ok := fileNameMap[file.Name]; ok {
 			item := &ExtractFile{
