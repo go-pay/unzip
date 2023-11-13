@@ -32,7 +32,7 @@ type FileNode struct {
 	children []*FileNode
 }
 
-func buildFileNode(parent *FileNode, file *ExtractFile, filePath string) {
+func (zr *ZipReader) buildFileNode(parent *FileNode, file *ExtractFile, filePath string) {
 	parts := strings.Split(file.FileName, "/")
 	if len(parts) == 1 {
 		// 文件名没有"/"，直接添加到父节点的子节点列表中
@@ -43,42 +43,42 @@ func buildFileNode(parent *FileNode, file *ExtractFile, filePath string) {
 			children: []*FileNode{},
 		}
 		parent.children = append(parent.children, node)
-	} else {
-		// 文件名包含"/"，需要递归处理目录结构
-		dirName := parts[0]
-		// 只截取parts[0]取文件目录名，保留完整的子文件路径parts[1:]
-		childFileName := strings.Join(parts[1:], "/")
-		// 后续没有子文件了，返回
-		if childFileName == "" {
-			return
-		}
-		childNode := findChildNode(parent.children, dirName)
-		if childNode == nil {
-			// 目录节点不存在，创建新的目录节点
-			childNode = &FileNode{
-				file:     &ExtractFile{FileName: dirName},
-				filePath: filePath + "/" + dirName, // 更新子节点的文件路径
-				isFile:   false,
-				children: []*FileNode{},
-			}
-			parent.children = append(parent.children, childNode)
-		}
-		// 递归处理子目录和文件
-		// todo:test optimize
-		extractFile := &ExtractFile{
-			FileName:         childFileName,
-			Method:           file.Method,
-			CompressedSize:   file.CompressedSize,
-			UncompressedSize: file.UncompressedSize,
-			HeaderOffset:     file.HeaderOffset,
-			RangeStart:       file.RangeStart,
-			RangeEnd:         file.RangeEnd,
-		}
-		buildFileNode(childNode, extractFile, filePath+"/"+dirName)
+		return
 	}
+	// 文件名包含"/"，需要递归处理目录结构
+	dirName := parts[0]
+	// 只截取parts[0]取文件目录名，保留完整的子文件路径parts[1:]
+	childFileName := strings.Join(parts[1:], "/")
+	// 后续没有子文件了，返回
+	if childFileName == "" {
+		return
+	}
+	childNode := zr.findChildNode(parent.children, dirName)
+	if childNode == nil {
+		// 目录节点不存在，创建新的目录节点
+		childNode = &FileNode{
+			file:     &ExtractFile{FileName: dirName},
+			filePath: filePath + "/" + dirName, // 更新子节点的文件路径
+			isFile:   false,
+			children: []*FileNode{},
+		}
+		parent.children = append(parent.children, childNode)
+	}
+	// 递归处理子目录和文件
+	// todo:test optimize
+	extractFile := &ExtractFile{
+		FileName:         childFileName,
+		Method:           file.Method,
+		CompressedSize:   file.CompressedSize,
+		UncompressedSize: file.UncompressedSize,
+		HeaderOffset:     file.HeaderOffset,
+		RangeStart:       file.RangeStart,
+		RangeEnd:         file.RangeEnd,
+	}
+	zr.buildFileNode(childNode, extractFile, filePath+"/"+dirName)
 }
 
-func findChildNode(children []*FileNode, name string) *FileNode {
+func (zr *ZipReader) findChildNode(children []*FileNode, name string) *FileNode {
 	for _, child := range children {
 		if child.file.FileName == name && !child.isFile {
 			return child
@@ -87,32 +87,32 @@ func findChildNode(children []*FileNode, name string) *FileNode {
 	return nil
 }
 
-func findFileNode(node *FileNode, fileName string) []*FileNode {
+func (zr *ZipReader) findFileNode(node *FileNode, fileName string) []*FileNode {
 	var result []*FileNode
 	if node.file != nil && node.file.FileName == fileName {
 		result = append(result, node)
 	}
 	children := node.children
 	for _, child := range children {
-		childResult := findFileNode(child, fileName)
+		childResult := zr.findFileNode(child, fileName)
 		result = append(result, childResult...)
 	}
 	return result
 }
 
-func findFileNodeByPath(node *FileNode, filePath string) *FileNode {
+func (zr *ZipReader) findFileNodeByPath(node *FileNode, filePath string) *FileNode {
 	if node.filePath == filePath {
 		return node
 	}
 	for _, child := range node.children {
 		if strings.HasPrefix(filePath, child.filePath) {
-			return findFileNodeByPath(child, filePath)
+			return zr.findFileNodeByPath(child, filePath)
 		}
 	}
 	return nil
 }
 
-func printFileNode(node *FileNode, indent string, isLast bool) {
+func (zr *ZipReader) printFileNode(node *FileNode, indent string, isLast bool) {
 	if node.file == nil {
 		return
 	}
@@ -132,7 +132,7 @@ func printFileNode(node *FileNode, indent string, isLast bool) {
 	childIndent := indent + "│   "
 	for i, child := range children {
 		isLastChild := i == len(children)-1
-		printFileNode(child, childIndent, isLastChild)
+		zr.printFileNode(child, childIndent, isLastChild)
 	}
 }
 
@@ -185,7 +185,7 @@ func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 
 		// todo:test
 		// 将item以树形结构存储到zr.directory
-		buildFileNode(zr.directory, item, "")
+		zr.buildFileNode(zr.directory, item, "")
 	}
 	return nil
 }
@@ -199,19 +199,19 @@ func NewZipReader(c context.Context, zipUrl string) (zr *ZipReader, err error) {
 }
 
 // 打印远端zip文件目录
-func (zr *ZipReader) printDirectory() error {
+func (zr *ZipReader) PrintDirectory() error {
 	if zr == nil {
 		return ErrZipReader
 	}
 	if zr.directory == nil || len(zr.directory.children) == 0 {
 		return ErrZipReaderDirectory
 	}
-	printFileNode(zr.directory.children[0], "", false)
+	zr.printFileNode(zr.directory.children[0], "", false)
 	return nil
 }
 
 // 通过文件名远程读取指定文件，返回key:path value:fileContent(可能存在同名，以不同key:path区分)
-func (zr *ZipReader) fileByName(c context.Context, files []string) (fileContent map[string][]byte, err error) {
+func (zr *ZipReader) FileByName(c context.Context, files []string) (fileContent map[string][]byte, err error) {
 	if zr == nil {
 		return nil, ErrZipReader
 	}
@@ -220,7 +220,7 @@ func (zr *ZipReader) fileByName(c context.Context, files []string) (fileContent 
 	}
 	fileContent = make(map[string][]byte)
 	for _, f := range files {
-		retFiles := findFileNode(zr.directory.children[0], f)
+		retFiles := zr.findFileNode(zr.directory.children[0], f)
 		for _, rf := range retFiles {
 			fileStream, err := readFile(c, zr.zipUrl, rf.file)
 			if err != nil {
@@ -233,14 +233,14 @@ func (zr *ZipReader) fileByName(c context.Context, files []string) (fileContent 
 }
 
 // 通过完整路径+文件名远程读取指定文件
-func (zr *ZipReader) fileByPath(c context.Context, filePath string) (fileContent []byte, err error) {
+func (zr *ZipReader) FileByPath(c context.Context, filePath string) (fileContent []byte, err error) {
 	if zr == nil {
 		return nil, ErrZipReader
 	}
 	if zr.directory == nil || len(zr.directory.children) == 0 {
 		return nil, ErrZipReaderDirectory
 	}
-	retFiles := findFileNodeByPath(zr.directory.children[0], filePath)
+	retFiles := zr.findFileNodeByPath(zr.directory.children[0], filePath)
 	if retFiles == nil {
 		return nil, errors.New("file not found")
 	}
@@ -250,5 +250,3 @@ func (zr *ZipReader) fileByPath(c context.Context, filePath string) (fileContent
 	}
 	return fileStream, nil
 }
-
-// todo 做成结构体 map[fiename]struct{}{}
