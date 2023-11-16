@@ -120,7 +120,6 @@ func readFile(c context.Context, zipUrl string, file *ExtractFile) (fileStream [
 		xlog.Errorf("io.ReadAll, err:%+v", err)
 		return nil, err
 	}
-
 	return fileStream, nil
 }
 

@@ -3,6 +3,7 @@ package unzip
 import (
 	"bytes"
 	"context"
+
 	"github.com/go-pay/unzip/zip"
 )
 
