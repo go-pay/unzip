@@ -31,7 +31,7 @@ func main() {
     if err != nil {
       fmt.Println(err)
     }
-    fileStream, err := zr.FileByPath(c, "/remoteFile/level1/level2/level3/version3.txt")
+    fileStream, err := zr.ReadFileByPath(c, "/remoteFile/level1/level2/level3/version3.txt")
     if err != nil {
       fmt.Println(err)
     }
