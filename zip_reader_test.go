@@ -14,7 +14,7 @@ func TestReadFileFromURLByName(t *testing.T) {
 	if err != nil {
 		xlog.Errorf("err:%v", err)
 	}
-	fileMap, err := zr.FileByName(ctx, []string{"other.txt"})
+	fileMap, err := zr.ReadFileByName(ctx, []string{"other.txt"})
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -32,7 +32,7 @@ func TestReadFileFromURLByPath(t *testing.T) {
 	if err != nil {
 		xlog.Errorf("err:%v", err)
 	}
-	fileStream, err := zr.FileByPath(ctx, "/remoteFile/level1/level2/level3/version3.txt")
+	fileStream, err := zr.ReadFileByPath(ctx, "/remoteFile/level1/level2/level3/version3.txt")
 	if err != nil {
 		fmt.Println(err)
 		return
