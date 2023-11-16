@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"io"
 	"sort"
 	"strconv"
@@ -232,7 +231,7 @@ func (zr *ZipReader) PrintDirectory() error {
 
 // todo:多个文件并发操作
 // 通过文件名远程读取指定文件，返回key:path value:fileContent(可能存在同名，以不同key:path区分)
-func (zr *ZipReader) FileByName(c context.Context, files []string) (fileContent map[string][]byte, err error) {
+func (zr *ZipReader) ReadFileByName(c context.Context, files []string) (fileContent map[string][]byte, err error) {
 	if zr == nil {
 		return nil, ErrZipReader
 	}
@@ -254,7 +253,7 @@ func (zr *ZipReader) FileByName(c context.Context, files []string) (fileContent 
 }
 
 // 通过完整路径+文件名远程读取指定文件
-func (zr *ZipReader) FileByPath(c context.Context, filePath string) (fileContent []byte, err error) {
+func (zr *ZipReader) ReadFileByPath(c context.Context, filePath string) (fileContent []byte, err error) {
 	if zr == nil {
 		return nil, ErrZipReader
 	}
