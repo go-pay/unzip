@@ -16,9 +16,17 @@ func (zr *ZipReader) ReadFileByName(c context.Context, files []string) (fileCont
 	}
 	fileContent = make(map[string][]byte)
 	for _, f := range files {
-		retFiles := zr.findFileNode(zr.directory.children[0], f)
+		retFiles := zr.findFileNode(zr.directory, f)
+		if len(retFiles) <= 0 {
+			return nil, NotFoundZipFile
+		}
 		for _, rf := range retFiles {
-			fileStream, err := zr.readFile(c, rf.file)
+			var fileStream []byte
+			if len(zr.zipData) <= 0 {
+				fileStream, err = zr.readRemoteFile(c, rf.file)
+			} else {
+				fileStream, err = zr.readLocalFile(c, rf.file)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -36,11 +44,19 @@ func (zr *ZipReader) ReadFileByPath(c context.Context, filePath string) (fileCon
 	if zr.directory == nil || len(zr.directory.children) == 0 {
 		return nil, ErrZipReaderDirectory
 	}
-	retFiles := zr.findFileNodeByPath(zr.directory.children[0], filePath)
-	if retFiles == nil {
+	rf := zr.findFileNodeByPath(zr.directory, filePath)
+	if rf == nil {
 		return nil, errors.New("file not found")
 	}
-	fileStream, err := zr.readFile(c, retFiles.file)
+	if rf == nil {
+		return nil, NotFoundZipFile
+	}
+	var fileStream []byte
+	if len(zr.zipData) <= 0 {
+		fileStream, err = zr.readRemoteFile(c, rf.file)
+	} else {
+		fileStream, err = zr.readLocalFile(c, rf.file)
+	}
 	if err != nil {
 		return nil, err
 	}

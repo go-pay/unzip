@@ -78,6 +78,40 @@ func getLocalFileHead(c context.Context, zipUrl, fileName string, fileOffset int
 	return
 }
 
+func unpackBuff(c context.Context, fileName string, bs []byte) (lfh *LocalFileHead, err error) {
+	buf := unpack.ReadBuff(bs)
+	sig := buf.Uint32()
+	if sig != zip.FileHeaderSignature {
+		return nil, zip.ErrFormat
+	}
+	// 按顺序读取
+	version := buf.Uint16()
+	flag := buf.Uint16()
+	method := buf.Uint16()
+	lastModTime := buf.Uint16()
+	lastModDate := buf.Uint16()
+	crc32 := buf.Uint32()
+	compressedSize := buf.Uint32()
+	uncompressedSize := buf.Uint32()
+	fileNameLen := buf.Uint16()
+	extraLen := buf.Uint16()
+	lfh = &LocalFileHead{
+		Signature:        sig,
+		NeedVersion:      version,
+		Flag:             flag,
+		Method:           method,
+		LastModTime:      lastModTime,
+		LastModDate:      lastModDate,
+		Crc32:            crc32,
+		CompressedSize:   compressedSize,
+		UncompressedSize: uncompressedSize,
+		FileNameLen:      fileNameLen,
+		ExtraLen:         extraLen,
+		FileName:         fileName,
+	}
+	return
+}
+
 func downLoadFile(c context.Context, zipUrl string, file *ExtractFile, saveDir ...string) (fileContent []byte, err error) {
 	//xlog.Infof("downLoadFile: %+v", file.FileName)
 	bs, err := httpGetRange(c, zipUrl, file.RangeStart, file.CompressedSize)
@@ -107,7 +141,7 @@ func downLoadFile(c context.Context, zipUrl string, file *ExtractFile, saveDir .
 	return fileContent, nil
 }
 
-func readFile(c context.Context, zipUrl string, file *ExtractFile) (fileStream []byte, err error) {
+func readRemoteFile(c context.Context, zipUrl string, file *ExtractFile) (fileStream []byte, err error) {
 	//xlog.Infof("ReadFile: %+v", file.FileName)
 	bs, err := httpGetRange(c, zipUrl, file.RangeStart, file.CompressedSize)
 	if err != nil {

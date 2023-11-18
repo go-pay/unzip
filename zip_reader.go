@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,13 +22,16 @@ var (
 	ErrHead               = errors.New("Accept-Ranges is not bytes")
 	ErrZipReader          = errors.New("zip reader is nil")
 	ErrZipReaderDirectory = errors.New("zip reader directory is nil")
+	NotFoundZipFile       = errors.New("not found zip file")
 )
 
 type ZipReader struct {
 	r         *zip.Reader
-	zipUrl    string
-	bs        []byte    // Zip package central directory information
+	zipUrl    string    // remote zip file url or local zip file path
+	bs        []byte    // zip package central directory information
 	directory *FileNode // file directory information
+
+	zipData []byte // local zip file byte steam
 }
 
 type FileNode struct {
@@ -68,7 +74,6 @@ func (zr *ZipReader) buildFileNode(parent *FileNode, file *ExtractFile, filePath
 		parent.children = append(parent.children, childNode)
 	}
 	// 递归处理子目录和文件
-	// todo:test optimize
 	extractFile := &ExtractFile{
 		FileName:         childFileName,
 		Method:           file.Method,
@@ -139,7 +144,7 @@ func (zr *ZipReader) printFileNode(node *FileNode, indent string, isLast bool) {
 	}
 }
 
-func (zr *ZipReader) readFile(c context.Context, file *ExtractFile) (fileStream []byte, err error) {
+func (zr *ZipReader) readRemoteFile(c context.Context, file *ExtractFile) (fileStream []byte, err error) {
 	//xlog.Infof("ReadFile: %+v", file.FileName)
 	bs, err := httpGetRange(c, zr.zipUrl, file.RangeStart, file.CompressedSize)
 	if err != nil {
@@ -155,6 +160,48 @@ func (zr *ZipReader) readFile(c context.Context, file *ExtractFile) (fileStream 
 	return fileStream, nil
 }
 
+func (zr *ZipReader) readLocalFile(c context.Context, file *ExtractFile) (fileStream []byte, err error) {
+	//xlog.Infof("ReadFile: %+v", file.FileName)
+	decompressor := flate.NewReader(bytes.NewBuffer(zr.zipData[file.RangeStart : file.RangeStart+file.CompressedSize]))
+	defer decompressor.Close()
+	fileStream, err = io.ReadAll(decompressor)
+	if err != nil {
+		xlog.Errorf("io.ReadAll, err:%+v", err)
+		return nil, err
+	}
+	return fileStream, nil
+}
+
+func (zr *ZipReader) downLoadFile(c context.Context, file *ExtractFile, saveDir ...string) error {
+	//xlog.Infof("downLoadFile: %+v", file.FileName)
+	bs, err := httpGetRange(c, zr.zipUrl, file.RangeStart, file.CompressedSize)
+	if err != nil {
+		return err
+	}
+	decompressor := flate.NewReader(bytes.NewBuffer(bs))
+	defer decompressor.Close()
+	fileContent, err := io.ReadAll(decompressor)
+	if err != nil {
+		xlog.Errorf("io.ReadAll, err:%+v", err)
+		return err
+	}
+	//xlog.Warnf("file over :\n%s", string(fileContent))
+	if len(saveDir) > 0 {
+		filePath := saveDir[0] + "/" + file.FileName
+		dirPath := filepath.Dir(filePath)
+		if err = os.MkdirAll(dirPath, os.ModePerm); err != nil {
+			xlog.Errorf("os.MkdirAll, err:%+v", err)
+			return err
+		}
+		if err = os.WriteFile(filePath, fileContent, 0666); err != nil {
+			xlog.Errorf("os.WriteFile, err:%+v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// 初始化远端zip读取器
 func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 	// Obtain the central directory section of the zip package
 	res, err := httpClient.HttpClient.Head(zipUrl)
@@ -188,7 +235,7 @@ func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 		children: []*FileNode{},
 	}
 	for _, file := range r.File {
-		// xlog.Infof("fileName: %s , method: %d , size: %d , offset: %d", file.Name, file.Method, file.CompressedSize64, file.HeaderOffset) //scatter.txt
+		//xlog.Infof("fileName: %s , method: %d , size: %d , offset: %d", file.Name, file.Method, file.CompressedSize64, file.HeaderOffset) //scatter.txt
 		// 收集文件
 		item := &ExtractFile{
 			FileName:         file.Name,
@@ -202,19 +249,76 @@ func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 		item.RangeStart = file.HeaderOffset + zip.FileHeaderLen + int64(lfh.FileNameLen+lfh.ExtraLen)
 		item.RangeEnd = item.RangeStart + item.CompressedSize - 1
 
-		// todo:test
 		// 将item以树形结构存储到zr.directory
 		zr.buildFileNode(zr.directory, item, "")
 	}
 	return nil
 }
 
+// 初始化本地zip读取器
+func (zr *ZipReader) initLocal(c context.Context, zipPath string) error {
+	// 读取本地zip包
+	zipData, err := ioutil.ReadFile(zipPath)
+	if err != nil {
+		return err
+	}
+	zr.zipData = zipData
+	// 初始化zipUrl
+	zr.zipUrl = zipPath
+	// 计算要读取的起始位置
+	startOffset := int64(len(zipData)) - int64(65536)
+	if startOffset < 0 {
+		startOffset = 0
+	}
+	// 读取数据
+	bs := zipData[startOffset:]
+	zr.bs = bs
+	// 初始化directory
+	r, err := zip.NewReader(bytes.NewReader(zr.bs), 65536)
+	if err != nil {
+		return err
+	}
+	// 构建文件树头节点
+	zr.directory = &FileNode{
+		file:     &ExtractFile{FileName: ""},
+		filePath: "",
+		isFile:   false,
+		children: []*FileNode{},
+	}
+	for _, file := range r.File {
+		// xlog.Infof("fileName: %s , method: %d , size: %d , offset: %d", file.Name, file.Method, file.CompressedSize64, file.HeaderOffset) //scatter.txt
+		// 收集文件
+		item := &ExtractFile{
+			FileName:         file.Name,
+			Method:           file.Method,
+			CompressedSize:   int64(file.CompressedSize64),
+			UncompressedSize: int64(file.UncompressedSize64),
+			HeaderOffset:     file.HeaderOffset,
+		}
+		lfh, _ := unpackBuff(c, item.FileName, zipData[item.HeaderOffset:item.HeaderOffset+zip.FileHeaderLen])
+		item.RangeStart = file.HeaderOffset + zip.FileHeaderLen + int64(lfh.FileNameLen+lfh.ExtraLen)
+		item.RangeEnd = item.RangeStart + item.CompressedSize - 1
+		// 将item以树形结构存储到zr.directory
+		zr.buildFileNode(zr.directory, item, "")
+	}
+	return nil
+}
+
+// NewZipReader 输入远端zip下载地址或者本地zip包路径
 func NewZipReader(c context.Context, zipUrl string) (zr *ZipReader, err error) {
 	zr = new(ZipReader)
-	if err = zr.init(c, zipUrl); err != nil {
+	if strings.HasPrefix(zipUrl, "https://") {
+		// 初始化一个远端zip读取器
+		if err = zr.init(c, zipUrl); err != nil {
+			return nil, err
+		}
+		return
+	}
+	// 初始化一个本地zip读取器
+	if err = zr.initLocal(c, zipUrl); err != nil {
 		return nil, err
 	}
-	return zr, nil
+	return
 }
 
 // PrintDirectory 打印远端zip文件目录
@@ -225,6 +329,6 @@ func (zr *ZipReader) PrintDirectory() error {
 	if zr.directory == nil || len(zr.directory.children) == 0 {
 		return ErrZipReaderDirectory
 	}
-	zr.printFileNode(zr.directory.children[0], "", false)
+	zr.printFileNode(zr.directory, "", false)
 	return nil
 }

@@ -22,28 +22,24 @@ func DownloadRemoteFile(c context.Context, zipUrl string, files []string, saveDi
 	return nil
 }
 
-// ReadRemoteFile 远程读取指定文件
-// files: 需要解压的文件(完整路径)
-func ReadRemoteFile(c context.Context, zipUrl string, files []string) (fileContent map[string][]byte, err error) {
-	// read zip file head
-	bs, err := readZipFileHead(c, zipUrl)
-	if err != nil {
-		return nil, err
+func (zr *ZipReader) DownloadRemoteFile(c context.Context, files []string, saveDir ...string) (err error) {
+	if zr == nil {
+		return ErrZipReader
 	}
-	// findFiles
-	efs, err := findFiles(c, zipUrl, bs, files, 65536)
-	if err != nil {
-		return nil, err
+	if zr.directory == nil || len(zr.directory.children) == 0 {
+		return ErrZipReaderDirectory
 	}
-	fileContent = make(map[string][]byte)
-	for _, v := range efs {
-		//xlog.Infof("v: %#v", v)
-		// todo 做成结构体 map[fiename]struct{}{}
-		fileStream, err := readFile(c, zipUrl, v)
-		if err != nil {
-			return nil, err
+	for _, f := range files {
+		retFiles := zr.findFileNode(zr.directory, f)
+		if len(retFiles) <= 0 {
+			return NotFoundZipFile
 		}
-		fileContent[v.FileName] = fileStream
+		for _, rf := range retFiles {
+			err = zr.downLoadFile(c, rf.file, saveDir...)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	return fileContent, nil
+	return nil
 }

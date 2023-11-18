@@ -1,11 +1,12 @@
 # unzip
 
-### 支持远程指定文件解压，无需下载整个文件
+### 支持远程指定zip文件读取，无需手动解压或下载整个文件
 
-1. 打印远端 ZIP 文件目录
-2. 通过文件名远程读取指定文件
-3. 通过完整路径+文件名远程读取指定文件
-4. todo：更多功能持续更新中
+1. 打印本地/远端 ZIP 文件目录
+2. 通过文件名本地/远程读取指定文件
+3. 通过完整路径+文件名读取本地/远程指定文件
+4. 通过完整路径+文件名下载远程指定文件到本地
+5. todo：更多功能持续更新中
 
 ### Install
 ```
@@ -36,6 +37,6 @@ func main() {
       fmt.Println(err)
     }
     fileContent := string(fileStream)
-    fmt.Printf("fileContent: %s\n", fileContent)
+    fmt.Println(fileContent)
 }
 ```
