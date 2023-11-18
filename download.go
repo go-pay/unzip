@@ -22,6 +22,7 @@ func DownloadRemoteFile(c context.Context, zipUrl string, files []string, saveDi
 	return nil
 }
 
+// DownloadRemoteFile 远程解压指定文件
 func (zr *ZipReader) DownloadRemoteFile(c context.Context, files []string, saveDir ...string) (err error) {
 	if zr == nil {
 		return ErrZipReader
