@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -31,14 +30,15 @@ type ZipReader struct {
 	bs        []byte    // zip package central directory information
 	directory *FileNode // file directory information
 
-	zipData []byte // local zip file byte steam
+	localZipData []byte // local zip file byte steam
 }
 
 type FileNode struct {
-	file     *ExtractFile // file Details
-	filePath string
-	isFile   bool
-	children []*FileNode
+	file        *ExtractFile // file Details
+	filePath    string       // file path
+	fileContent []byte       // file content
+	isFile      bool         // is file or directory
+	children    []*FileNode
 }
 
 func (zr *ZipReader) buildFileNode(parent *FileNode, file *ExtractFile, filePath string) {
@@ -162,7 +162,7 @@ func (zr *ZipReader) readRemoteFile(c context.Context, file *ExtractFile) (fileS
 
 func (zr *ZipReader) readLocalFile(c context.Context, file *ExtractFile) (fileStream []byte, err error) {
 	//xlog.Infof("ReadFile: %+v", file.FileName)
-	decompressor := flate.NewReader(bytes.NewBuffer(zr.zipData[file.RangeStart : file.RangeStart+file.CompressedSize]))
+	decompressor := flate.NewReader(bytes.NewBuffer(zr.localZipData[file.RangeStart : file.RangeStart+file.CompressedSize]))
 	defer decompressor.Close()
 	fileStream, err = io.ReadAll(decompressor)
 	if err != nil {
@@ -258,20 +258,20 @@ func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 // 初始化本地zip读取器
 func (zr *ZipReader) initLocal(c context.Context, zipPath string) error {
 	// 读取本地zip包
-	zipData, err := ioutil.ReadFile(zipPath)
+	localZipData, err := os.ReadFile(zipPath)
 	if err != nil {
 		return err
 	}
-	zr.zipData = zipData
+	zr.localZipData = localZipData
 	// 初始化zipUrl
 	zr.zipUrl = zipPath
 	// 计算要读取的起始位置
-	startOffset := int64(len(zipData)) - int64(65536)
+	startOffset := int64(len(localZipData)) - int64(65536)
 	if startOffset < 0 {
 		startOffset = 0
 	}
 	// 读取数据
-	bs := zipData[startOffset:]
+	bs := localZipData[startOffset:]
 	zr.bs = bs
 	// 初始化directory
 	r, err := zip.NewReader(bytes.NewReader(zr.bs), 65536)
@@ -295,7 +295,7 @@ func (zr *ZipReader) initLocal(c context.Context, zipPath string) error {
 			UncompressedSize: int64(file.UncompressedSize64),
 			HeaderOffset:     file.HeaderOffset,
 		}
-		lfh, _ := unpackBuff(c, item.FileName, zipData[item.HeaderOffset:item.HeaderOffset+zip.FileHeaderLen])
+		lfh, _ := unpackBuff(c, item.FileName, localZipData[item.HeaderOffset:item.HeaderOffset+zip.FileHeaderLen])
 		item.RangeStart = file.HeaderOffset + zip.FileHeaderLen + int64(lfh.FileNameLen+lfh.ExtraLen)
 		item.RangeEnd = item.RangeStart + item.CompressedSize - 1
 		// 将item以树形结构存储到zr.directory
@@ -307,7 +307,7 @@ func (zr *ZipReader) initLocal(c context.Context, zipPath string) error {
 // NewZipReader 输入远端zip下载地址或者本地zip包路径
 func NewZipReader(c context.Context, zipUrl string) (zr *ZipReader, err error) {
 	zr = new(ZipReader)
-	if strings.HasPrefix(zipUrl, "https://") {
+	if strings.HasPrefix(zipUrl, "https://") || strings.HasPrefix(zipUrl, "http://") {
 		// 初始化一个远端zip读取器
 		if err = zr.init(c, zipUrl); err != nil {
 			return nil, err

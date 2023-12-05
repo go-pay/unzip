@@ -14,5 +14,8 @@ var (
 func TestDecompressFileFromURL(t *testing.T) {
 	xlog.Level = xlog.DebugLevel
 	zipUrl := "https://pay.wechatpay.cn/wiki/doc/apiv3/wechatpay/download/Product_5.zip"
-	DownloadRemoteFile(ctx, zipUrl, []string{"Product/Qt5Core.dll", "Product/Qt5Gui.dll", "Product/Qt5Widgets.dll"}, "/Users/jerry/file")
+	err := DownloadRemoteFile(ctx, zipUrl, []string{"Product/Qt5Core.dll", "Product/Qt5Gui.dll", "Product/Qt5Widgets.dll"}, "/Users/jerry/file")
+	if err != nil {
+		xlog.Errorf("err:%v", err)
+	}
 }
