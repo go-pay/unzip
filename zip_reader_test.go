@@ -60,7 +60,7 @@ func TestDownZipFileFromURL(t *testing.T) {
 	if err != nil {
 		xlog.Errorf("err:%v", err)
 	}
-	err = zr.DownloadRemoteFile(ctx, []string{"version1.txt"}, "/Users/sm3245/Downloads")
+	err = zr.DownloadRemoteFile(ctx, []string{"version1.txt"}, "/Users/jerry/Downloads")
 	if err != nil {
 		xlog.Errorf("err:%v", err)
 	}
@@ -68,7 +68,7 @@ func TestDownZipFileFromURL(t *testing.T) {
 
 func TestPrintDirectoryFromLocal(t *testing.T) {
 	xlog.Level = xlog.DebugLevel
-	zipUrl := "/Users/sm3245/Downloads/remoteFile.zip"
+	zipUrl := "/Users/jerry/Downloads/remoteFile.zip"
 	zr, err := NewZipReader(ctx, zipUrl)
 	if err != nil {
 		xlog.Errorf("err:%v", err)
@@ -81,7 +81,7 @@ func TestPrintDirectoryFromLocal(t *testing.T) {
 
 func TestReadFileFromLocalByName(t *testing.T) {
 	xlog.Level = xlog.DebugLevel
-	zipUrl := "/Users/sm3245/Downloads/remoteFile.zip"
+	zipUrl := "/Users/jerry/Downloads/remoteFile.zip"
 	zr, err := NewZipReader(ctx, zipUrl)
 	if err != nil {
 		xlog.Errorf("err:%v", err)
@@ -99,7 +99,7 @@ func TestReadFileFromLocalByName(t *testing.T) {
 
 func TestReadFileFromLocalByPath(t *testing.T) {
 	xlog.Level = xlog.DebugLevel
-	zipUrl := "/Users/sm3245/Downloads/remoteFile.zip"
+	zipUrl := "/Users/jerry/Downloads/remoteFile.zip"
 	zr, err := NewZipReader(ctx, zipUrl)
 	if err != nil {
 		xlog.Errorf("err:%v", err)

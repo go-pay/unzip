@@ -44,6 +44,9 @@ func httpGetRange(c context.Context, url string, start, getSize int64) (bs []byt
 
 func getLocalFileHead(c context.Context, zipUrl, fileName string, fileOffset int64) (lfh *LocalFileHead, err error) {
 	bs, err := httpGetRange(c, zipUrl, fileOffset, zip.FileHeaderLen)
+	if err != nil {
+		return nil, err
+	}
 	buf := unpack.ReadBuff(bs)
 	sig := buf.Uint32()
 	if sig != zip.FileHeaderSignature {
