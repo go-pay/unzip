@@ -1,6 +1,11 @@
 package unzip
 
-import "context"
+import (
+	"context"
+	"time"
+
+	"github.com/go-pay/util/retry"
+)
 
 // DownloadRemoteFile 远程解压指定文件
 // files: 需要解压的文件(完整路径)
@@ -10,8 +15,18 @@ func DownloadRemoteFile(c context.Context, zipUrl string, files []string, saveDi
 	if err != nil {
 		return err
 	}
+	var (
+		efs []*ExtractFile
+	)
 	// findFiles
-	efs, err := findFiles(c, zipUrl, bs, files, 65536)
+	err = retry.Retry(func() error {
+		fs, err := findFiles(c, zipUrl, bs, files, 65536)
+		if err != nil {
+			return err
+		}
+		efs = fs
+		return nil
+	}, 3, time.Second)
 	if err != nil {
 		return err
 	}

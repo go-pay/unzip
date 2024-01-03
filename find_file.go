@@ -38,7 +38,10 @@ func findFiles(c context.Context, zipUrl string, bs []byte, files []string, getS
 				HeaderOffset:     file.HeaderOffset,
 			}
 			// 获取下载RangeStart
-			lfh, _ := getLocalFileHead(c, zipUrl, item.FileName, item.HeaderOffset)
+			lfh, err := getLocalFileHead(c, zipUrl, item.FileName, item.HeaderOffset)
+			if err != nil {
+				return nil, err
+			}
 			item.RangeStart = file.HeaderOffset + zip.FileHeaderLen + int64(lfh.FileNameLen+lfh.ExtraLen)
 			item.RangeEnd = item.RangeStart + item.CompressedSize - 1
 			efs = append(efs, item)

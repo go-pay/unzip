@@ -12,8 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-pay/unzip/zip"
+	"github.com/go-pay/util/retry"
 	"github.com/go-pay/xlog"
 )
 
@@ -245,10 +247,12 @@ func (zr *ZipReader) init(c context.Context, zipUrl string) error {
 			HeaderOffset:     file.HeaderOffset,
 		}
 		// 获取下载RangeStart
-		lfh, _ := getLocalFileHead(c, zipUrl, item.FileName, item.HeaderOffset)
+		lfh, err := getLocalFileHead(c, zipUrl, item.FileName, item.HeaderOffset)
+		if err != nil {
+			return err
+		}
 		item.RangeStart = file.HeaderOffset + zip.FileHeaderLen + int64(lfh.FileNameLen+lfh.ExtraLen)
 		item.RangeEnd = item.RangeStart + item.CompressedSize - 1
-
 		// 将item以树形结构存储到zr.directory
 		zr.buildFileNode(zr.directory, item, "")
 	}
@@ -309,7 +313,10 @@ func NewZipReader(c context.Context, zipUrl string) (zr *ZipReader, err error) {
 	zr = new(ZipReader)
 	if strings.HasPrefix(zipUrl, "https://") || strings.HasPrefix(zipUrl, "http://") {
 		// 初始化一个远端zip读取器
-		if err = zr.init(c, zipUrl); err != nil {
+		err = retry.Retry(func() error {
+			return zr.init(c, zipUrl)
+		}, 3, time.Second)
+		if err != nil {
 			return nil, err
 		}
 		return
